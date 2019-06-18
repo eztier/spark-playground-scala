@@ -1,1 +1,1 @@
-# spark-jumpstart-scala
+# spark-playground-scala
