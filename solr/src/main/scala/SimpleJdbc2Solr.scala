@@ -5,6 +5,9 @@ import org.apache.spark.sql.SQLContext
 import java.util.Properties
 import java.sql.Timestamp
 
+// For testing
+import scala.util.Random.alphanumeric
+
 case class ParticipantHist
 (
 id: Option[String],
@@ -53,6 +56,13 @@ object SimpleJdbc2SolrApp {
     val ds = df.as[ParticipantHist]
     
     val ds1 = ds.selectExpr("id", "start_time", "from_store", "'epic' as to_store", "_uid as study_id", "'enroll:participant' as purpose", "array(mrn) as related", "response")
+    
+    val ds2 = ds.take(5).map(a => s"${a.id}::${alphanumeric.take(4).mkString("")}")
+    ds2.foreach(println(_))
+
+    val ds3 = ds.take(5).map(a => a.id.slice(5, 10))
+    ds3.foreach(println(_))
+
     // val ds1 = ds.selectExpr("id", "start_time", "from_store", "'epic' as to_store", "_uid as study_id", "'enroll:participant' as purpose", "mrn as related", "response")
     
     // ds1.show()
