@@ -63,6 +63,7 @@ object SimpleJdbc2SolrApp {
     val ds3 = ds.take(5).map(a => a.id.slice(5, 10))
     ds3.foreach(println(_))
 
+    // td = case when charindex(''responsecode>'', response) > 0 then substring(response, charindex(''responsecode>'', response), 80)  else left(response,100) end + ''...'', ''''
     // val ds1 = ds.selectExpr("id", "start_time", "from_store", "'epic' as to_store", "_uid as study_id", "'enroll:participant' as purpose", "mrn as related", "response")
     
     // ds1.show()
