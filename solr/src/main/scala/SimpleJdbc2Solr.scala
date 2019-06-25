@@ -97,5 +97,7 @@ object SimpleJdbc2SolrApp {
 
     df.write.format("solr").options(options).mode(org.apache.spark.sql.SaveMode.Overwrite).save
     
+    spark.stop()
+    
   }
 }
