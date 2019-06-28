@@ -1,7 +1,7 @@
 FROM openjdk:8-alpine
 
 RUN apk add --no-cache --virtual .build-deps g++ python3-dev libffi-dev openssl-dev && \
-    apk add --no-cache --update python3 && \
+    apk add --no-cache --update wget tar bash python3 && \
     pip3 install --upgrade pip setuptools
 
 RUN ln -s /usr/include/locale.h /usr/include/xlocale.h
