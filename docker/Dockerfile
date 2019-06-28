@@ -17,3 +17,5 @@ RUN tar -xzf spark-2.4.3-bin-hadoop2.7.tgz && \
 COPY start-master.sh /start-master.sh
 
 COPY start-worker.sh /start-worker.sh
+
+ENV PATH="/spark/bin:${PATH}"
