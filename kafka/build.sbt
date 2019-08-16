@@ -8,6 +8,7 @@ libraryDependencies += "org.apache.spark" %% "spark-core" % "2.4.3" % "provided"
 libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.4.3" % "provided"
 // https://mvnrepository.com/artifact/org.apache.spark/spark-streaming-kafka-0-10
 libraryDependencies += "org.apache.spark" %% "spark-streaming-kafka-0-10" % "2.4.3"
+libraryDependencies += "ca.uhn.hapi" % "hapi-structures-v231" % "2.3"
 
 // http://queirozf.com/entries/creating-scala-fat-jars-for-spark-on-sbt-with-sbt-assembly-plugin#spark-2-deduplicate-different-file-contents-found-in-the-following
 lazy val assemblySettings = Seq(

@@ -7,6 +7,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
 
+import com.eztier.hl7mock.Hapi.parseMessage
 
 class StreamsProcessor(brokers: String) {
   def process(): Unit = {
@@ -41,6 +42,12 @@ object StreamsProcessor {
 
 object SimpleKafkaApp {
   def main(args: Array[String]) {
+    // Start the producer, wait for some records to be filled.
+    import ExecutionContext.Implicits.global
+    import scala.concurrent.Future
+    val publisher = Future {
+      KafkaProducer.produce
+    }
     
     import StreamsProcessor.{master, ageFunc}
   
@@ -54,6 +61,7 @@ object SimpleKafkaApp {
       spark.readStream
         .format("kafka.bootstrap.servers", brokers)
         .option("subscribe", "ADT")
+        .option("startingOffsets", "earliest")
         .load()
     
     /*
@@ -74,6 +82,14 @@ object SimpleKafkaApp {
     .add("birthDate", DataTypes.StringType)
     
     // TODO: convert string to Hapi Message, get PID.
+    /*
+    adtDf.map {
+      row => 
+        val m = parseMessage(row.getAs[String]("value"))
+        // Get PID etc...
+    } 
+    */ 
+    
     
     val pidDf = adtDf.select(from_json($"value", struct).as("pid"))
         
