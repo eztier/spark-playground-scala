@@ -3,7 +3,7 @@ package com.eztier.examples
 import java.util.Properties
 import org.apache.kafka.clients.producer.{Producer, KafkaProducer, ProducerRecord}
 
-object KafkaProducer {
+object Hl7KafkaProducer {
   private val kafkaBrokers = "127.0.0.1:9092,172.17.0.1:9010,172.17.0.1:9096"
     
   private def buildKafkaProducerForHl7 () : KafkaProducer[String, String] = {
@@ -20,7 +20,7 @@ object KafkaProducer {
   private val hl7Topic ="ADT"
   private val r = new scala.util.Random()
     
-  private val padLeftZero: Int => String = in: Int => if (in < 10) "0" + in.toString else in.toString
+  private val padLeftZero: Int => String = (in: Int) => if (in < 10) "0" + in.toString else in.toString
   private val getRandomWithRange: (Int, Int) => Int = (min: Int, max: Int) => max + r.nextInt(( max - min) + 1)
   
   private val getRandomMickeyAdt: () => (String, String) = () => {

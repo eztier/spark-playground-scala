@@ -1,11 +1,15 @@
 package com.eztier.examples
 
+import java.time.Period;
+import java.time.{LocalDate, LocalDateTime};
+
 import org.apache.spark._
 import org.apache.spark.streaming._
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.expressions.UserDefinedFunction
 
 import com.eztier.hl7mock.Hapi.parseMessage
 
@@ -43,15 +47,19 @@ object StreamsProcessor {
 object SimpleKafkaApp {
   def main(args: Array[String]) {
     // Start the producer, wait for some records to be filled.
-    import ExecutionContext.Implicits.global
+    import scala.concurrent.ExecutionContext.Implicits.global
     import scala.concurrent.Future
     val publisher = Future {
-      KafkaProducer.produce
+      Hl7KafkaProducer.produce
     }
     
     import StreamsProcessor.{master, ageFunc}
   
-    val	spark	=	new	SparkSession().builder().appName("Simple Kafka application").master(master("no-parallelism")).getOrCreate()
+    val	spark	=	SparkSession
+      .builder
+      .appName("Simple Kafka application")
+      .master(master("no-parallelism"))
+      .getOrCreate()
     
     import spark.implicits._
     
@@ -59,7 +67,8 @@ object SimpleKafkaApp {
     
     val inputDf =
       spark.readStream
-        .format("kafka.bootstrap.servers", brokers)
+        .format("kafka")
+        .option("kafka.bootstrap.servers", brokers)
         .option("subscribe", "ADT")
         .option("startingOffsets", "earliest")
         .load()
@@ -94,7 +103,7 @@ object SimpleKafkaApp {
     val pidDf = adtDf.select(from_json($"value", struct).as("pid"))
         
     val pidFlattenedDf = pidDf.selectExpr("pid.firstName", "pid.lastName", "pid.birthDate")
-        
+    
     val personDf = pidFlattenedDf.withColumn("birthDate", to_timestamp($"birthDate", "yyyy-MM-dd'T'HH:mm:ss.SSSZ"))
         
     val ageUdf: UserDefinedFunction = udf(ageFunc, DataTypes.IntegerType)
