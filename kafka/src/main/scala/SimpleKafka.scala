@@ -81,7 +81,13 @@ object SimpleKafkaApp {
       
     consoleOutput.awaitTermination()
     */
-        
+    
+    inputDf.writeStream
+      .format("console")
+      .option("truncate", "false")
+      .start()
+      .awaitTermination()
+
     val adtDf = inputDf.selectExpr("CAST(value AS STRING)")
     
     // PID segment
