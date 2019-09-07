@@ -37,7 +37,8 @@ object Hl7KafkaProducer {
   
   val produce = { 
   
-    while (true) {
+    // while (true) {
+    for (i <- 1 to 10) {  
       val nextMickey = getRandomMickeyAdt()
       
       val data = new ProducerRecord[String, String](hl7Topic, nextMickey._1, nextMickey._2)
