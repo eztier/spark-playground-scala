@@ -185,7 +185,17 @@ object PublicationService {
 
 // ./Infrastructure
 
+// ./Infrastruture/repository/doobie
+
 // ./Infrastruture/repository/doobie/DoobieAuthorRepositoryInterpreter.scala
+import cats.data.OptionT
+import cats.effect.Bracket
+import cats.implicits._
+import doobie._
+import doobie.implicits._
+import io.circe.parser.decode
+import io.circe.syntax._
+
 private object AuthorSQL {
 
   def findOne(id: Long): Query0[Author] = sql"""
@@ -200,6 +210,38 @@ private object AuthorSQL {
     WHERE EMAIL = $email
   """.query
 }
+
+/*
+// https://blog.softwaremill.com/a-short-story-about-resource-handling-61b8405c352d
+Bracket pattern: acquiring, using, and releasing various resources
+
+IO(new BufferedReader(new FileReader(file))).bracket {
+ in =>     
+    IO(in.readLine())   
+} { in =>    
+   IO(in.close())   
+}
+
+*/
+
+/*
+Type projector:
+https://github.com/typelevel/kind-projector
+
+EitherT[?[_], Int, ?]    // equivalent to: type R[F[_], B] = EitherT[F, Int, B]
+*/
+
+class DoobieAuthorRepositoryInterpreter[F[_]: Bracket[?[_], Throwable]](val xa: Transactor[F])
+extends AuthorRepositoryAlgebra[F]
+with IdentityStore[F, Long, Author] { self =>
+  import AuthorSQL._
+
+  def findOne(id: Long): OptionT[F, Author] = OptionT(findOne(id).option.transact(xa))
+
+  def findByEmail(email: String): OptionT[F, Author] =
+    OptionT(find(email).option.transact(xa))
+}
+
 
 // ./Infrastruture/repository/doobie/DoobiePublicationRepositoryInterpreter.scala
 private object PublicationSQL {
