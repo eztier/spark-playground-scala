@@ -1,7 +1,10 @@
 package com.eztier.examples
 
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.time.Period;
 import java.time.{LocalDate, LocalDateTime};
+import java.sql.Timestamp
 
 import org.apache.spark._
 import org.apache.spark.streaming._
@@ -11,12 +14,48 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.expressions.UserDefinedFunction
 
+import ca.uhn.hl7v2.model.Message
+import ca.uhn.hl7v2.model.v231.segment.PID
+
 import com.eztier.hl7mock.Hapi.parseMessage
 
 class StreamsProcessor(brokers: String) {
   def process(): Unit = {
     // ...
   }
+}
+
+case class Patient(
+  mrn: String = "",
+  firstName: String = "",
+  lastName: String = "",
+  birthDate: Timestamp = new Timestamp(new Date().getTime()),
+  age: Int = 0
+)
+
+object PatientSyntax {
+  val sdf = new SimpleDateFormat("yyyy-MM-dd")
+
+  implicit def HL7MessageToPatient(maybeMessage: Option[Message]) = {
+    maybeMessage match {
+      case Some(hpiMsg) => 
+        val pid = hpiMsg.get("PID").asInstanceOf[PID]
+
+        val dob = pid.getDateTimeOfBirth.getTimeOfAnEvent.getValueAsDate
+        // val dt: Date = sdf.parse(dob)
+        val ts = new java.sql.Timestamp(dob.getTime())
+        
+        val name = pid.getPatientName.map { a =>
+          (a.getFamilyLastName.getFamilyName.getValueOrEmpty, a.getGivenName.getValueOrEmpty)
+        }.headOption.getOrElse(("", ""))
+
+        val mrn = pid.getPatientIdentifierList.map(_.getID.getValueOrEmpty).headOption.getOrElse("UNKNOWN")
+
+        Patient(mrn, name._2, name._1, ts)
+      case _ => Patient()
+    }
+  }
+  
 }
 
 object StreamsProcessor {
@@ -90,21 +129,12 @@ object SimpleKafkaApp {
 
     val adtDf = inputDf.selectExpr("CAST(value AS STRING)")
     
-    // PID segment
+    /*
+    // When the incoming kafka message is JSON format.
     val struct = new StructType()
     .add("firstName", DataTypes.StringType)
     .add("lastName", DataTypes.StringType)
     .add("birthDate", DataTypes.StringType)
-    
-    // TODO: convert string to Hapi Message, get PID.
-    /*
-    adtDf.map {
-      row => 
-        val m = parseMessage(row.getAs[String]("value"))
-        // Get PID etc...
-    } 
-    */ 
-    
     
     val pidDf = adtDf.select(from_json($"value", struct).as("pid"))
         
@@ -115,6 +145,21 @@ object SimpleKafkaApp {
     val ageUdf: UserDefinedFunction = udf(ageFunc, DataTypes.IntegerType)
     
     val processedDf = personDf.withColumn("age", ageUdf.apply($"birthDate"))
+    */
+
+    // Convert string to Hapi Message, get PID.
+    val processedDf = adtDf.map {
+      row => 
+        val m = parseMessage(row.getAs[String]("value"))
+
+        // Get PID etc...
+        import PatientSyntax._
+
+        val p: Patient = m
+        p
+    }.map { p =>
+      p.copy(age = ageFunc(p.birthDate))
+    }.toDF()
     
     // Key should be some dashboard dimension.
     val resDf = processedDf.select(
