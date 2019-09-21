@@ -17,7 +17,7 @@ object SimpleCassandraApp {
     val driverClass = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
     connectionProperties.setProperty("Driver", driverClass)
 
-    val table = "(select convert(int, convert(varbinary, left(convert(varchar(50), container, 1), 3) + '0', 1))/16 part_id, convert(varchar(50), container, 1) container, ty, convert(varchar(50), ref, 1) ref from dbo.kv) subset"
+    val table = "(select convert(int, convert(varbinary, left(convert(varchar(50), container, 1), 3) + '0', 1))/16 part_id, convert(varchar(50), container, 1) container, ty, convert(varchar(50), ref, 1) ref from dbo.pre_kv) subset"
 
     val	sqlContext	=	new	SQLContext(sc)
     
@@ -26,7 +26,7 @@ object SimpleCassandraApp {
     // sqlContext.read.jdbc(url, where, connectionProperties).select("container", "ref").explain(true)
     
     // For writing back jdbc with 10 connections.
-    // df.repartition(10).write.mode(SaveMode.Append).jdbc(jdbcUrl, "kv", connectionProperties)
+    // df.repartition(16).write.mode(SaveMode.Append).jdbc(jdbcUrl, "kv", connectionProperties)
     
     // val df = sqlContext.read.jdbc(url = url, table = table, numPartitions = 16, columnName = "part_id", lowerBound = 0, upperBound = 15, connectionProperties = connectionProperties)
     
@@ -56,8 +56,22 @@ object SimpleCassandraApp {
 
     rows.saveToCassandra("test", "kv")
 
-    val rdd = sc.cassandraTable("test", "kv")
-    println("COUNT >> " + rdd.count)
+    val casdf = { 
+      sc.cassandraTable("test", "kv")
+        .select("part_id", "container", "ty", "ref")
+        // .keyBy[(Int, String, String, String)]("part_id", "container", "ty", "ref")
+        .keyBy[(Int, String, String, String)]("part_id", "container", "ty")
+        .map( r => r)
+        
+      // .keyBy(row => (row.getInt("part_id"), row.getString("container"), row.getString("ty")))
+        // .spanByKey
+      }
+      
+    // val casdf2 = casdf.select("container", "ty", "ref")
+
+    // Save to partitioned sql server table: dbo.kv
+    casdf.repartition(16).write.mode(SaveMode.Append).jdbc(url, "kv", connectionProperties)
+    
   }
 
   def main2(args: Array[String]) {

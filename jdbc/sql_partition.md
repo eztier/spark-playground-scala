@@ -98,10 +98,13 @@ CREATE TABLE kv (container binary(16), ty varchar(50), ref binary(16))
     ON p_range_ps0 (container)  
 GO
 
+-- Premise that we are moving from non-partitioned to partitioned.
+CREATE TABLE pre_kv (container binary(16), ty varchar(50), ref binary(16)) 
+go
 
 declare @ct int = 1000
 while @ct > 0 begin
-insert kv select convert(binary(16),newid()), 'type1', convert(binary(16),newid())
+insert pre_kv select convert(binary(16),newid()), 'type1', convert(binary(16),newid())
 select @ct = @ct - 1
 end
 go
