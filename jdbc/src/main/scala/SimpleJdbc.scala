@@ -95,6 +95,16 @@ object SimpleJdbcApp {
 }
 
 /*
+create table kv (container binary(16), ty varchar(50), ref binary(16), primary key (container, ty, ref));
+insert kv select 0xBD2108171260B04FB8191272954E7F40, 'type1', convert(binary(16),newid());
+insert kv select 0xBD2108171260B04FB8191272954E7F40, 'type1', convert(binary(16),newid());
+insert kv select 0xBD2108171260B04FB8191272954E7F40, 'type1', convert(binary(16),newid());
+insert kv select 0xFF1E726082D8A84AAEEFFF69B391BC40, 'type1', convert(binary(16),newid());
+insert kv select 0xFF1E726082D8A84AAEEFFF69B391BC40, 'type1', convert(binary(16),newid());
+insert kv select 0xFF1E726082D8A84AAEEFFF69B391BC40, 'type1', convert(binary(16),newid());
+*/
+
+/*
 
 def	main(args:	Array[String])	{
 val	conf	=	new	SparkConf().setAppName("Simple	Application")
