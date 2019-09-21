@@ -17,10 +17,23 @@ object SimpleCassandraApp {
     val driverClass = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
     connectionProperties.setProperty("Driver", driverClass)
 
-    val where = "(select convert(varchar(50), container, 1) container, ty, convert(varchar(50), ref, 1) ref from dbo.kv) as subset"
+    val table = "(select convert(int, convert(varbinary, left(convert(varchar(50), container, 1), 3) + '0', 1))/16 part_id, convert(varchar(50), container, 1) container, ty, convert(varchar(50), ref, 1) ref from dbo.kv) subset"
 
     val	sqlContext	=	new	SQLContext(sc)
-    sqlContext.read.jdbc(url, where, connectionProperties)
+    
+    // Explain options
+    // sqlContext.read.jdbc(url, where, connectionProperties).explain(true)
+    // sqlContext.read.jdbc(url, where, connectionProperties).select("container", "ref").explain(true)
+    
+    // For writing back jdbc with 10 connections.
+    // df.repartition(10).write.mode(SaveMode.Append).jdbc(jdbcUrl, "kv", connectionProperties)
+    
+    // val df = sqlContext.read.jdbc(url = url, table = table, numPartitions = 16, columnName = "part_id", lowerBound = 0, upperBound = 15, connectionProperties = connectionProperties)
+    
+    val df = sqlContext.read.jdbc(url = url, table = table, numPartitions = 16, columnName = "part_id", lowerBound = 0, upperBound = 15, connectionProperties = connectionProperties)
+    
+    df.explain(true)
+    df
   }
 
   def main(args: Array[String]) {
@@ -37,12 +50,14 @@ object SimpleCassandraApp {
     val sc: SparkContext = new SparkContext(conf)
     
     val df = getJdbcSource(sc)
+    // display(df)
+    
     val rows: RDD[Row] = df.rdd
 
     rows.saveToCassandra("test", "kv")
 
     val rdd = sc.cassandraTable("test", "kv")
-    println(rdd.count)
+    println("COUNT >> " + rdd.count)
   }
 
   def main2(args: Array[String]) {
@@ -72,12 +87,12 @@ object SimpleCassandraApp {
 }
 
 /*
-CREATE KEYSPACE test WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1 };
-CREATE TABLE test.kv(container text, ty text, ref text, primary key((container, ty), ref)) with clustering order by (ref asc);
+CREATE KEYSPACE if not exists test WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1 };
+CREATE TABLE test.kv(part_id int, container text, ty text, ref text, primary key((part_id, container, ty), ref)) with clustering order by (ref asc);
  
-INSERT INTO test.kv(container, ty, ref) VALUES ('key1', 'ty1', 'val1');
-INSERT INTO test.kv(container, ty, ref) VALUES ('key1', 'ty1', 'val2');
-INSERT INTO test.kv(container, ty, ref) VALUES ('key1', 'ty1', 'val3');
+INSERT INTO test.kv(part_id, container, ty, ref) VALUES (1, 'key1', 'ty1', 'val1');
+INSERT INTO test.kv(part_id, container, ty, ref) VALUES (1, 'key1', 'ty1', 'val2');
+INSERT INTO test.kv(part_id, container, ty, ref) VALUES (1, 'key1', 'ty1', 'val3');
 
 $SPARK_HOME/bin/spark-shell --conf spark.cassandra.connection.host=127.0.0.1 \
   --conf spark.cassandra.auth.username=cassandra --conf spark.cassandra.auth.password=cassandra
