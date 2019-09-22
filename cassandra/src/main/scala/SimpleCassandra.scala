@@ -4,6 +4,7 @@ import java.util.Properties
 import com.datastax.spark.connector._
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{SQLContext, Row, SparkSession, SaveMode}
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.cassandra._
 import com.datastax.spark.connector.rdd.CassandraTableScanRDD
@@ -83,10 +84,21 @@ object SimpleCassandraApp {
     // casdf2.show()
     
     // println(casdf2.count())
-    
+
     // Save to partitioned sql server table: dbo.kv
     // casdf2.repartition(16).write.mode(SaveMode.Append).jdbc(url, "dbo.kv", connectionProperties)
-    casdf2.write.mode(SaveMode.Append).jdbc(url, "dbo.kv", connectionProperties)
+    // casdf2.write.mode(SaveMode.Append).jdbc(url, "dbo.kv", connectionProperties)
+
+    casdf2
+      .write
+      .format("jdbc")
+      .option("url", url)
+      .option(JDBCOptions.JDBC_DRIVER_CLASS, driverClass)
+      .option("dbtable", "dbo.kv")
+      .option("user", "admin")
+      .option("password", "12345678").mode(SaveMode.Append).save
+
+    // spark.stop()
   }
 
   def main2(args: Array[String]) {
