@@ -3,39 +3,12 @@ package com.eztier.examples
 import java.util.Properties
 import com.datastax.spark.connector._
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.sql.{SQLContext, Row}
+import org.apache.spark.sql.{SQLContext, Row, SparkSession, SaveMode}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.cassandra._
+import com.datastax.spark.connector.rdd.CassandraTableScanRDD
 
 object SimpleCassandraApp {
-  def getJdbcSource(sc: SparkContext) = {
-    val url = "jdbc:sqlserver://localhost:1433;databaseName=test"
-    val connectionProperties = new Properties()
-    connectionProperties.put("user", "admin")
-    connectionProperties.put("password", "12345678")
-    
-    val driverClass = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
-    connectionProperties.setProperty("Driver", driverClass)
-
-    val table = "(select convert(int, convert(varbinary, left(convert(varchar(50), container, 1), 3) + '0', 1))/16 part_id, convert(varchar(50), container, 1) container, ty, convert(varchar(50), ref, 1) ref from dbo.pre_kv) subset"
-
-    val	sqlContext	=	new	SQLContext(sc)
-    
-    // Explain options
-    // sqlContext.read.jdbc(url, where, connectionProperties).explain(true)
-    // sqlContext.read.jdbc(url, where, connectionProperties).select("container", "ref").explain(true)
-    
-    // For writing back jdbc with 10 connections.
-    // df.repartition(16).write.mode(SaveMode.Append).jdbc(jdbcUrl, "kv", connectionProperties)
-    
-    // val df = sqlContext.read.jdbc(url = url, table = table, numPartitions = 16, columnName = "part_id", lowerBound = 0, upperBound = 15, connectionProperties = connectionProperties)
-    
-    val df = sqlContext.read.jdbc(url = url, table = table, numPartitions = 16, columnName = "part_id", lowerBound = 0, upperBound = 15, connectionProperties = connectionProperties)
-    
-    df.explain(true)
-    df
-  }
-
   def main(args: Array[String]) {
     // https://stackoverflow.com/questions/36182828/not-able-to-change-authentication-in-spark-cassandra-connector
     // http://www.russellspitzer.com/2016/02/16/Multiple-Clusters-SparkSql-Cassandra/
@@ -46,32 +19,74 @@ object SimpleCassandraApp {
       csc.setConf(s"${cluster}:${keyspace}/spark.cassandra.auth.username", username)
       csc.setConf(s"${cluster}:${keyspace}/spark.cassandra.auth.password", password)
     */
+    /*
     val conf: SparkConf = new SparkConf().setAppName("Simple Cassandra") // .setMaster("local")
     val sc: SparkContext = new SparkContext(conf)
+    val	sqlContext	=	new	SQLContext(sc)
+    val spark: SparkSession = sqlContext.sparkSession
+    */
+    val spark = SparkSession.builder.appName("Simple Cassandra").getOrCreate()
+    val sc: SparkContext = spark.sparkContext
     
-    val df = getJdbcSource(sc)
+    // jdbc
+    val url = "jdbc:sqlserver://localhost:1433;databaseName=test"
+    val connectionProperties = new Properties()
+    connectionProperties.setProperty("user", "admin")
+    connectionProperties.setProperty("password", "12345678")
+    
+    val driverClass = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+    connectionProperties.setProperty("Driver", driverClass)
+
+    // val table = "(select convert(int, convert(varbinary, left(convert(varchar(50), container, 1), 3) + '0', 1))/16 part_id, convert(varchar(50), container, 1) container, ty, convert(varchar(50), ref, 1) ref from dbo.pre_kv) subset"
+    val table = "(select convert(int, convert(varbinary, left(convert(varchar(50), container, 1), 3) + '0', 1))/16 part_id, container, ty, ref from dbo.pre_kv) subset"
+
+    // Explain options
+    // sqlContext.read.jdbc(url, where, connectionProperties).explain(true)
+    // sqlContext.read.jdbc(url, where, connectionProperties).select("container", "ref").explain(true)
+    
+    // For writing back jdbc with 10 connections.
+    // df.repartition(16).write.mode(SaveMode.Append).jdbc(jdbcUrl, "kv", connectionProperties)
+    
+    // val df = sqlContext.read.jdbc(url = url, table = table, numPartitions = 16, columnName = "part_id", lowerBound = 0, upperBound = 15, connectionProperties = connectionProperties)
+    
+    val df = spark.read.jdbc(url = url, table = table, numPartitions = 16, columnName = "part_id", lowerBound = 0, upperBound = 15, connectionProperties = connectionProperties)
+    df.explain(true)
+
     // display(df)
     
     val rows: RDD[Row] = df.rdd
 
     rows.saveToCassandra("test", "kv")
 
-    val casdf = { 
+    val rdd = { 
       sc.cassandraTable("test", "kv")
-        .select("part_id", "container", "ty", "ref")
+        .select("container", "ty", "ref")
+        .map(r => (r.get[Array[Byte]]("container"), r.getString("ty"), r.get[Array[Byte]]("ref")))
+        // .select("part_id", "container", "ty", "ref")
         // .keyBy[(Int, String, String, String)]("part_id", "container", "ty", "ref")
-        .keyBy[(Int, String, String, String)]("part_id", "container", "ty")
-        .map( r => r)
-        
-      // .keyBy(row => (row.getInt("part_id"), row.getString("container"), row.getString("ty")))
+        // .keyBy[(Int, Array[Byte], String, Array[Byte])]("part_id", "container", "ty", "ref")
+        // .spanByKey
+        // .map(a => (a._1._2, a._1._3, a._1._4))
+
+        // .keyBy(row => (row.getInt("part_id"), row.getString("container"), row.getString("ty")))
         // .spanByKey
       }
-      
+    
     // val casdf2 = casdf.select("container", "ty", "ref")
 
-    // Save to partitioned sql server table: dbo.kv
-    casdf.repartition(16).write.mode(SaveMode.Append).jdbc(url, "kv", connectionProperties)
+    // for implicit conversions from Spark RDD to Dataframe
+    import spark.implicits._
     
+    val casdf = rdd.toDF()
+    val casdf2 = casdf.selectExpr("_1 as container", "_2 as ty", "_3 as ref")
+
+    // casdf2.show()
+    
+    // println(casdf2.count())
+    
+    // Save to partitioned sql server table: dbo.kv
+    // casdf2.repartition(16).write.mode(SaveMode.Append).jdbc(url, "dbo.kv", connectionProperties)
+    casdf2.write.mode(SaveMode.Append).jdbc(url, "dbo.kv", connectionProperties)
   }
 
   def main2(args: Array[String]) {
@@ -102,6 +117,8 @@ object SimpleCassandraApp {
 
 /*
 CREATE KEYSPACE if not exists test WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1 };
+CREATE TABLE test.kv(part_id int, container blob, ty text, ref blob, primary key((part_id, container, ty), ref)) with clustering order by (ref asc);
+
 CREATE TABLE test.kv(part_id int, container text, ty text, ref text, primary key((part_id, container, ty), ref)) with clustering order by (ref asc);
  
 INSERT INTO test.kv(part_id, container, ty, ref) VALUES (1, 'key1', 'ty1', 'val1');
