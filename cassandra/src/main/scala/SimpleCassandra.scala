@@ -7,10 +7,94 @@ import org.apache.spark.sql.{SQLContext, Row, SparkSession, SaveMode}
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.cassandra._
-import com.datastax.spark.connector.rdd.CassandraTableScanRDD
+import com.datastax.spark.connector.rdd.{ReadConf, CassandraTableScanRDD}
+import com.datastax.driver.core.ConsistencyLevel
+import org.apache.log4j.Logger
 
 object SimpleCassandraApp {
+
+  /*
+    Either use argument in spark shell (default is LOCAL_ONE)
+    https://github.com/datastax/spark-cassandra-connector/blob/master/spark-cassandra-connector/src/main/scala/com/datastax/spark/connector/rdd/ReadConf.scala
+    --conf spark.cassandra.input.consistency.level=ALL
+  */
   def main(args: Array[String]) {
+    val spark = SparkSession.builder.appName("Simple Cassandra").getOrCreate()
+    val sc: SparkContext = spark.sparkContext
+    
+    // cassandra
+    val casdf = spark
+      .read
+      .format("org.apache.spark.sql.cassandra")
+      .options(Map(
+        "table" -> "kv",
+        "keyspace" -> "test",
+        "cluster" -> "Test"
+        )
+      ).load() // This Dataset will use a spark.cassandra.input.split.size of 48
+    
+    val casdf2 = casdf.select("container", "ty", "ref")
+
+    // -- or --
+    
+    /*
+    implicit val readConf = ReadConf(splitCount = Some(100), splitSizeInMB = 1000, fetchSizeInRows = 2000, ConsistencyLevel.QUORUM)
+
+    // Write out for tests.
+    // sc.cassandraTable("test", "kv").coalesce(1, true).saveAsTextFile("/var/out.csv")
+
+    val rdd = { 
+      sc.cassandraTable("test", "kv")
+        // .withReadConf(readConf)
+        .select("part_id", "container", "ty", "ref")
+        // .map(r => (r.get[Array[Byte]]("container"), r.getString("ty"), r.get[Array[Byte]]("ref")))
+        .keyBy[(Int, Array[Byte], String, Array[Byte])]("part_id", "container", "ty", "ref")
+        .map(a => (a._1._2, a._1._3, a._1._4))
+      }
+    
+    // for implicit conversions from Spark RDD to Dataframe
+    import spark.implicits._
+    
+    val casdf = rdd.toDF()
+    val casdf2 = casdf.selectExpr("_1 as container", "_2 as ty", "_3 as ref")
+    */
+
+    // jdbc
+    val url = "jdbc:sqlserver://localhost:1433;databaseName=test"
+    val connectionProperties = new Properties()
+    connectionProperties.setProperty("user", "admin")
+    connectionProperties.setProperty("password", "12345678")
+    connectionProperties.setProperty("numPartitions", "1")
+    
+    val driverClass = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+    connectionProperties.setProperty("Driver", driverClass)
+    
+    // casdf2.write.mode(SaveMode.Append).jdbc(url, "dbo.kv", connectionProperties)
+
+    // -- OR -- 
+
+    // SQL cannot handle spark level parallelism for writes, set numPartitions to 1.
+    casdf2
+      .write
+      .format("jdbc")
+      .option("url", url)
+      .option(JDBCOptions.JDBC_DRIVER_CLASS, driverClass)
+      .option("dbtable", "dbo.kv")
+      .option("user", "admin")
+      .option("password", "12345678")
+      .option("numPartitions", 1)
+      .mode(SaveMode.Append).save
+
+    /*
+      // For writing back jdbc with 10 connections.
+      // Note: not a good idea.
+      // df.repartition(10).write.mode(SaveMode.Append).jdbc(jdbcUrl, "kv", connectionProperties)    
+    */
+    
+    spark.stop()
+  }
+
+  def main1(args: Array[String]) {
     // https://stackoverflow.com/questions/36182828/not-able-to-change-authentication-in-spark-cassandra-connector
     // http://www.russellspitzer.com/2016/02/16/Multiple-Clusters-SparkSql-Cassandra/
     /*
@@ -26,7 +110,7 @@ object SimpleCassandraApp {
     val	sqlContext	=	new	SQLContext(sc)
     val spark: SparkSession = sqlContext.sparkSession
     */
-    val spark = SparkSession.builder.appName("Simple Cassandra").getOrCreate()
+    val spark = SparkSession.builder.appName("Simple Cassandra 2").getOrCreate()
     val sc: SparkContext = spark.sparkContext
     
     // jdbc
@@ -45,11 +129,6 @@ object SimpleCassandraApp {
     // sqlContext.read.jdbc(url, where, connectionProperties).explain(true)
     // sqlContext.read.jdbc(url, where, connectionProperties).select("container", "ref").explain(true)
     
-    // For writing back jdbc with 10 connections.
-    // df.repartition(16).write.mode(SaveMode.Append).jdbc(jdbcUrl, "kv", connectionProperties)
-    
-    // val df = sqlContext.read.jdbc(url = url, table = table, numPartitions = 16, columnName = "part_id", lowerBound = 0, upperBound = 15, connectionProperties = connectionProperties)
-    
     val df = spark.read.jdbc(url = url, table = table, numPartitions = 16, columnName = "part_id", lowerBound = 0, upperBound = 15, connectionProperties = connectionProperties)
     df.explain(true)
 
@@ -59,46 +138,7 @@ object SimpleCassandraApp {
 
     rows.saveToCassandra("test", "kv")
 
-    val rdd = { 
-      sc.cassandraTable("test", "kv")
-        .select("container", "ty", "ref")
-        .map(r => (r.get[Array[Byte]]("container"), r.getString("ty"), r.get[Array[Byte]]("ref")))
-        // .select("part_id", "container", "ty", "ref")
-        // .keyBy[(Int, String, String, String)]("part_id", "container", "ty", "ref")
-        // .keyBy[(Int, Array[Byte], String, Array[Byte])]("part_id", "container", "ty", "ref")
-        // .spanByKey
-        // .map(a => (a._1._2, a._1._3, a._1._4))
-
-        // .keyBy(row => (row.getInt("part_id"), row.getString("container"), row.getString("ty")))
-        // .spanByKey
-      }
-    
-    // val casdf2 = casdf.select("container", "ty", "ref")
-
-    // for implicit conversions from Spark RDD to Dataframe
-    import spark.implicits._
-    
-    val casdf = rdd.toDF()
-    val casdf2 = casdf.selectExpr("_1 as container", "_2 as ty", "_3 as ref")
-
-    // casdf2.show()
-    
-    // println(casdf2.count())
-
-    // Save to partitioned sql server table: dbo.kv
-    // casdf2.repartition(16).write.mode(SaveMode.Append).jdbc(url, "dbo.kv", connectionProperties)
-    // casdf2.write.mode(SaveMode.Append).jdbc(url, "dbo.kv", connectionProperties)
-
-    casdf2
-      .write
-      .format("jdbc")
-      .option("url", url)
-      .option(JDBCOptions.JDBC_DRIVER_CLASS, driverClass)
-      .option("dbtable", "dbo.kv")
-      .option("user", "admin")
-      .option("password", "12345678").mode(SaveMode.Append).save
-
-    // spark.stop()
+    spark.stop()
   }
 
   def main2(args: Array[String]) {
