@@ -1,17 +1,22 @@
-name := "simple-cats-app"
+name := "simple-frameless-app"
 version := "1.0"
 scalaVersion := "2.11.12"
-
-val sparkVersion = "2.4.3"
  
 resolvers += Resolver.bintrayIvyRepo("com.eed3si9n", "sbt-plugins")
  
-libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion % "provided"
-libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provided"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "2.4.3" % "provided"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.4.3" % "provided"
+libraryDependencies += "org.apache.spark" %% "spark-mllib" % "2.4.3" % "provided"
 
-// https://mvnrepository.com/artifact/org.typelevel/cats-core
-libraryDependencies += "org.typelevel" %% "cats-core" % "1.6.0"
+val framelessVersion = "0.8.0" // for Spark 2.4.0
 
+libraryDependencies ++= List(
+  "org.typelevel" %% "frameless-dataset" % framelessVersion,
+  "org.typelevel" %% "frameless-ml"      % framelessVersion,
+  "org.typelevel" %% "frameless-cats"    % framelessVersion  
+)
+
+// http://queirozf.com/entries/creating-scala-fat-jars-for-spark-on-sbt-with-sbt-assembly-plugin#spark-2-deduplicate-different-file-contents-found-in-the-following
 lazy val assemblySettings = Seq(
   assemblyJarName in assembly := s"${name.value}-${version.value}.jar",
   
@@ -26,7 +31,6 @@ lazy val assemblySettings = Seq(
     case PathList("com", "codahale", xs @ _*) => MergeStrategy.last
     case PathList("com", "yammer", xs @ _*) => MergeStrategy.last
     case "about.html" => MergeStrategy.rename
-    // case "META-INF/services/org.apache.spark.sql.sources.DataSourceRegister" => MergeStrategy.concat
     case "META-INF/ECLIPSEF.RSA" => MergeStrategy.last
     case "META-INF/mailcap" => MergeStrategy.last
     case "META-INF/mimetypes.default" => MergeStrategy.last
