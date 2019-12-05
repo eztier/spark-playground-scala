@@ -9,29 +9,33 @@
 
 case class PersonName
 (
-  id: Option[String],
-  lastName: Option[String],
-  firstName: Option[String],
-  assigningAuthority: Option[String]
+  id: String = "",
+  lastName: String = "",
+  firstName: String = "",
+  assigningAuthority: String = ""
 )
 
 case class PersonLocation
 (
-  pointOfCare: Option[String],
-  facility: Option[String]
+  pointOfCare: String = "",
+  room: String = "",
+  bed: String = "",
+  facility: String = "",
+  building: String = "",
+  floor: String = ""
 ) 
 
 case class PatientVisit
 (
-  patientClass: Option[String],
-  assignedPatientLocation: Option[PersonLocation],
-  admissionType: Option[String],
-  attendingDoctor: Option[PersonName],
-  referringDoctor: Option[PersonName],
-  hosipitalService: Option[String],
-  reAdmissionIndicator: Option[String],
-  dischargeDisposition: Option[String],
-  admitDateTime: Option[String],
-  dischargeDateTime: Option[String],
-  visitIndicator: Option[String]
+  patientClass: String = "",
+  assignedPatientLocation: PersonLocation = PersonLocation(),
+  admissionType: String = "",
+  attendingDoctor: PersonName = PersonName(),
+  referringDoctor: PersonName = PersonName(),
+  hosipitalService: String = "",
+  reAdmissionIndicator: String = "",
+  dischargeDisposition: String = "",
+  admitDateTime: String = "",
+  dischargeDateTime: String = "",
+  visitIndicator: String = ""
 )
