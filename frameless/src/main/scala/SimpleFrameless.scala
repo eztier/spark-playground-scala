@@ -10,6 +10,7 @@ import frameless.ml._
 import frameless.ml.feature._
 import frameless.ml.regression._
 import org.apache.spark.ml.linalg.Vector
+import org.apache.spark.ml.regression.RandomForestRegressionModel
 
 case class PatientVisitFromTo(patientPostalCode: Int, visitFacility: Int, patientAge: Double)
 
@@ -47,9 +48,12 @@ object SimpleFramelessApp {
     case class RandomForestInputs(patientAge: Double, features: Vector)
     
     val rf = TypedRandomForestRegressor[RandomForestInputs]
-    
-    val model = rf.fit(trainingDataWithFeatures).run()
 
+    // val model= rf.fit(trainingDataWithFeatures).run()
+
+    val model: AppendTransformer[RandomForestInputs, TypedRandomForestRegressor.Outputs, RandomForestRegressionModel] = rf.fit(trainingDataWithFeatures).run()
+    model.transformer.write.overwrite().save("/root/tmp/spark-random-forest-model")
+    
     // Prediction.
     val testData = TypedDataset.create(Seq(PatientVisitFromTo(10018, 2, 0)))
     

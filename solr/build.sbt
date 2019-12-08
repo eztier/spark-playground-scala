@@ -33,6 +33,8 @@ lazy val commonSettings = Seq(
 
 lazy val settings = commonSettings
 
+val sparkVersion = "2.4.4"
+
 lazy val global = project
   .in(file("."))
   .settings(
@@ -40,8 +42,8 @@ lazy val global = project
     settings,
     assemblySettings,
     libraryDependencies ++= Seq(
-      "org.apache.spark" %% "spark-core" % "2.4.3" % "provided",
-      "org.apache.spark" %% "spark-sql" % "2.4.3" % "provided",
+      "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
+      "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
       "com.lucidworks.spark" % "spark-solr" % "3.6.0",
       "com.microsoft.sqlserver" % "mssql-jdbc" % "7.2.2.jre8"
     )

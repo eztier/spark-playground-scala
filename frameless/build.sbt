@@ -3,10 +3,12 @@ version := "1.0"
 scalaVersion := "2.11.12"
  
 resolvers += Resolver.bintrayIvyRepo("com.eed3si9n", "sbt-plugins")
- 
-libraryDependencies += "org.apache.spark" %% "spark-core" % "2.4.3" % "provided"
-libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.4.3" % "provided"
-libraryDependencies += "org.apache.spark" %% "spark-mllib" % "2.4.3" % "provided"
+
+val sparkVersion = "2.4.4"
+
+libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion % "provided"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provided"
+libraryDependencies += "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided"
 
 val framelessVersion = "0.8.0" // for Spark 2.4.0
 

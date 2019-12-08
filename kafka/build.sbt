@@ -2,7 +2,7 @@ name := "simple-kafka-app"
 version := "1.0"
 scalaVersion := "2.11.12"
 
-val sparkVersion = "2.4.3"
+val sparkVersion = "2.4.4"
  
 resolvers += Resolver.bintrayIvyRepo("com.eed3si9n", "sbt-plugins")
  
