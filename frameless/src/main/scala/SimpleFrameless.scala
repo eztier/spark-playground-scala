@@ -49,8 +49,6 @@ object SimpleFramelessApp {
     
     val rf = TypedRandomForestRegressor[RandomForestInputs]
 
-    // val model= rf.fit(trainingDataWithFeatures).run()
-
     val model: AppendTransformer[RandomForestInputs, TypedRandomForestRegressor.Outputs, RandomForestRegressionModel] = rf.fit(trainingDataWithFeatures).run()
     model.transformer.write.overwrite().save("/root/tmp/spark-random-forest-model")
     
