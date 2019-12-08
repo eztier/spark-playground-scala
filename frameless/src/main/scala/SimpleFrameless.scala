@@ -18,6 +18,7 @@ case class FacilityFeatures(patientPostalCode: Int, visitFacility: Int)
 object SimpleFramelessApp {
   def main(args: Array[String]) {
 
+    // Setup spark context.
     val appID: String = new java.util.Date().toString + math.floor(math.random * 10E4).toLong.toString
 
     val conf: SparkConf = new SparkConf()
@@ -29,9 +30,11 @@ object SimpleFramelessApp {
     implicit def session: SparkSession = SparkSession.builder().config(conf).getOrCreate()
     implicit def sc: SparkContext = session.sparkContext
     
+    // TODO: Get training data from storage.
     val trainingData = TypedDataset.create(Seq(
       PatientVisitFromTo(10001, 1, 43),
-      PatientVisitFromTo(10010, 2, 76)
+      PatientVisitFromTo(10010, 2, 76),
+      PatientVisitFromTo(11230, 3, 35)
     ))
 
     val assembler = TypedVectorAssembler[FacilityFeatures]
@@ -62,7 +65,8 @@ object SimpleFramelessApp {
     
     val predictions = model.transform(testDataWithFeatures).as[VisitFacilityPrediction]
     
-    predictions.select(predictions.col('predictedAge)).collect.run()
-    
+    val arr = predictions.select(predictions.col('predictedAge)).collect.run()
+
+    arr.foreach(a => println(s"Predicted age of patient: ${a}"))
   }
 }
