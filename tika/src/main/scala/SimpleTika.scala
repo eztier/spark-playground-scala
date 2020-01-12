@@ -8,6 +8,25 @@ import java.sql.Timestamp
 import com.eztier.TextExtractor
 
 object SimpleTikaApp {
+
+  // https://tika.apache.org/1.8/examples.html
+  def tikaFunc (a: (String, PortableDataStream)) = {
+
+    val file: File = new File(a._1.drop(5))
+    val parser: AutoDetectParser = new AutoDetectParser()
+    val stream: InputStream = new FileInputStream(file)
+    val handler: WriteOutContentHandler = new WriteOutContentHandler(-1)
+    // val handler: BodyContentHandler = new BodyContentHandler()
+    val metadata: Metadata = new Metadata()
+    val context: ParseContext = new ParseContext()
+
+    parser.parse(stream, handler, metadata, context)
+
+    stream.close
+
+    println(handler.toString())
+  }
+
   def main(args: Array[String]) {
 
     // Setup spark context.
@@ -21,6 +40,13 @@ object SimpleTikaApp {
 
     implicit def session: SparkSession = SparkSession.builder().config(conf).getOrCreate()
     implicit def sc: SparkContext = session.sparkContext
+
+    // Files must be hadoop compatible.
+    val filesPath = "/home/user/documents/*"
+    val fileData = sc.binaryFiles(filesPath)
+
+    fileData
+      .foreach(x => tikaFunc(x))
     
   }
 }

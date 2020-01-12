@@ -108,6 +108,11 @@ class TextExtractor {
     if (parsers.contains(suffix)) Some(parsers(suffix)) else None
   }
 
+  private def getStream = {
+    val ops = new ByteArrayOutputStream()
+    // ops.toByteArray()
+  }
+
   def extract(file: File): Option[Extracted] = {
     var istream: InputStream = null
     try {
