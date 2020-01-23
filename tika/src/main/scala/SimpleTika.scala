@@ -47,6 +47,11 @@ object SimpleTikaApp {
 
     fileData
       .foreach(x => tikaFunc(x))
-    
+
+    /*  
+    val binRDD = sc.binaryFiles("/data/")
+    val textRDD = binRDD.map(file => {new org.apache.tika.Tika().parseToString(file._2.open( ))})
+    textRDD.saveAsTextFile("/output/")
+    */    
   }
 }

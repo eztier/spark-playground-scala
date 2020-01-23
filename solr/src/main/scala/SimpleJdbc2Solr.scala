@@ -26,7 +26,7 @@ case class ParticipantHist(
 )
 
 object SimpleJdbc2SolrApp {
-  def main(args: Array[String]) {
+  def main2(args: Array[String]) {
     
     // https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html
     val user = System.getenv("SQL_USER")
