@@ -20,11 +20,15 @@ object SimpleCassandra2SolrApp {
   )
   
   def main(args: Array[String]) {
-    import com.datastax.spark.connector.cql._
+    // import com.datastax.spark.connector.cql._
     
     val spark: SparkSession = SparkSession.builder.appName("Simple cassandra 2 solr application").getOrCreate()
+    /*
     // Configure cassandra manually.
-    spark.setCassandraConf(cassandraOptions("cluster"), CassandraConnectorConf.ConnectionHostParam.option(cassandraOptions("host")) ++ CassandraConnectorConf.ConnectionPortParam.option(cassandraOptions("port").toInt))
+    spark.setCassandraConf(cassandraOptions("cluster"), 
+      CassandraConnectorConf.ConnectionHostParam.option(cassandraOptions("spark.cassandra.connection.host")) ++ 
+      CassandraConnectorConf.ConnectionPortParam.option(cassandraOptions("spark.cassandra.connection.port").toInt))
+    */
 
     import org.apache.spark.sql.types._
     import org.apache.spark.sql.functions._
@@ -36,9 +40,12 @@ object SimpleCassandra2SolrApp {
 
     val mapToListUdf: UserDefinedFunction = udf(mapToListFunc, DataTypes.createArrayType(DataTypes.StringType))
     
-    val df = spark.sql(s"""
-      select * from dwh.ca_document_extracted limit 10
-    """)
+    val df = spark
+      .read
+      .cassandraFormat("ca_document_extracted", "dwh")
+      .options(cassandraOptions)
+      .load()
+      .limit(10)  
 
     val df2 = df.withColumn("metadatalist", mapToListUdf($"metadata"))
       .select(
