@@ -105,24 +105,23 @@ object SimpleCassandra2SolrApp {
       .cassandraFormat("ca_document_extracted", "dwh")
       .options(cassandraOptions)
       .load()
-      .limit(100)
       .filter($"doc_year_created" > 0)
       .select(
-        $"id".alias("domain_facet"),
+        $"id",
         $"domain".alias("domain_facet"),
-        $"root_id".alias("root_id_t"),
+        $"root_id".alias("root_id_s"),
         $"root_owner".alias("root_owner_t"),
         $"root_associates".alias("root_associates_t"),
         $"root_company".alias("root_company_facet"),
         $"root_status".alias("root_status_facet"),
-        $"root_display".alias("root_display_t"),
-        $"root_display_long".alias("root_display_long_t"),
+        $"root_display".alias("root_display_ph"),
+        $"root_display_long".alias("root_display_long_ph"),
         $"doc_category".alias("doc_category_facet"),
         $"doc_name".alias("doc_name_display"),
         $"doc_date_created".alias("doc_date_created_display"),
-        unix_timestamp($"doc_date_created", "yyyy-MM-dd HH:mm:ss").alias("doc_date_created_sort_t"),
+        unix_timestamp($"doc_date_created", "yyyy-MM-dd HH:mm:ss").alias("doc_date_created_sort_ti"),
         $"doc_year_created".alias("doc_year_created_facet"),
-        $"content").alias("content_t")
+        $"content").alias("content_ph")
 
     df.explain
 
