@@ -93,34 +93,36 @@ object SimpleCassandra2SolrApp {
 
   def main(args: Array[String]) {
     
+    import org.apache.spark.sql.functions._
+    
+    org.apache.spark.sql.functions.unix_timestamp()
+
     val spark = SparkSession.builder.appName("Simple cassandra 2 solr application").getOrCreate()
     import spark.implicits._
-
+    
     val df = spark
       .read
       .cassandraFormat("ca_document_extracted", "dwh")
       .options(cassandraOptions)
       .load()
+      .limit(100)
+      .filter($"doc_year_created" > 0)
       .select(
-        $"id",
-        $"domain",
-        $"root_type",
-        $"root_id",
-        $"root_owner",
-        $"root_associates",
-        $"root_company",
-        $"root_status",
-        $"root_display",
-        $"root_display_long",
-        $"doc_id",
-        $"doc_other_id",
-        $"doc_file_path",
-        $"doc_object_path",
-        $"doc_category",
-        $"doc_name",
-        $"doc_date_created",
-        $"doc_year_created",
-        $"content")
+        $"id".alias("domain_facet"),
+        $"domain".alias("domain_facet"),
+        $"root_id".alias("root_id_t"),
+        $"root_owner".alias("root_owner_t"),
+        $"root_associates".alias("root_associates_t"),
+        $"root_company".alias("root_company_facet"),
+        $"root_status".alias("root_status_facet"),
+        $"root_display".alias("root_display_t"),
+        $"root_display_long".alias("root_display_long_t"),
+        $"doc_category".alias("doc_category_facet"),
+        $"doc_name".alias("doc_name_display"),
+        $"doc_date_created".alias("doc_date_created_display"),
+        unix_timestamp($"doc_date_created", "yyyy-MM-dd HH:mm:ss").alias("doc_date_created_sort_t"),
+        $"doc_year_created".alias("doc_year_created_facet"),
+        $"content").alias("content_t")
 
     df.explain
 
