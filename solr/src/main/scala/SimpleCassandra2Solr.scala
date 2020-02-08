@@ -98,6 +98,9 @@ object SimpleCassandra2SolrApp {
     org.apache.spark.sql.functions.unix_timestamp()
 
     val spark = SparkSession.builder.appName("Simple cassandra 2 solr application").getOrCreate()
+
+    // spark.sqlContext.setConf("spark.sql.shuffle.partitions", "2")
+      
     import spark.implicits._
     
     val df = spark
@@ -105,8 +108,8 @@ object SimpleCassandra2SolrApp {
       .cassandraFormat("ca_document_extracted", "dwh")
       .options(cassandraOptions)
       .load()
-      // .filter($"doc_year_created" > 0)
-      .limit(10)
+      .filter($"doc_year_created" > 0)
+      // .limit(10)
       .select(
         $"id",
         $"domain".alias("domain_facet"),
@@ -127,7 +130,7 @@ object SimpleCassandra2SolrApp {
 
     df.explain
 
-    df.show
+    // df.show
 
     df.write.format("solr").options(solrOptions).mode(org.apache.spark.sql.SaveMode.Overwrite).save
 
