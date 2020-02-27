@@ -124,7 +124,7 @@ object SimpleCassandra2SolrApp {
         $"doc_name".alias("doc_name_t"),
         $"doc_date_created".alias("doc_date_created_display"),
         unix_timestamp($"doc_date_created", "yyyy-MM-dd HH:mm:ss").alias("doc_date_created_sort_ti"),
-        $"doc_year_created".alias("doc_year_created_facet"),
+        $"doc_year_created".alias("doc_year_created_facet"),        
         $"content".alias("content_t")
       )
 
