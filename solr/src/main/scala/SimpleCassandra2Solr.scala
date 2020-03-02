@@ -113,7 +113,7 @@ object SimpleCassandra2SolrApp {
       .select(
         $"id",
         $"domain".alias("domain_facet"),
-        $"root_id".alias("root_id_t"),
+        $"root_id".alias("root_id_s"),
         $"root_owner".alias("root_owner_t"),
         $"root_associates".alias("root_associates_t"),
         $"root_company".alias("root_company_facet"),
