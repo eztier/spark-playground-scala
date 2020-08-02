@@ -1,14 +1,23 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-          {
-                "name": "spark-job",
-                "type": "scala",
-                "request": "launch",
-                "debugServer": 4000
-          }
-    ]
+      // Use IntelliSense to learn about possible attributes.
+      // Hover to view descriptions of existing attributes.
+      // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+      "version": "0.2.0",
+      "configurations": [
+            {
+                  "name": "spark-job",
+                  "type": "scala",
+                  "request": "launch",
+                  "debugServer": 4000,
+                  "mainClass": "com.eztier.examples.SimpleMongo.Main",
+                  /*
+                  "args": [
+                        "--driver-java-options", "-Djava.net.preferIPv4Stack=true",
+                        "--conf", "spark.mongodb.input.uri=mongodb://127.0.0.1/dump.hl7?readPreference=primaryPreferred",
+                        "--conf", "spark.mongodb.output.uri=mongodb://127.0.0.1/dump.hl7?writeConcern.w=majority"
+                  ],
+                  */
+                  "jvmOptions": []
+            }
+      ]
 }
