@@ -11,6 +11,7 @@ import org.apache.spark.sql.cassandra._
 import com.datastax.spark.connector.rdd.{ReadConf, CassandraTableScanRDD}
 import com.datastax.driver.core.ConsistencyLevel
 import org.apache.log4j.Logger
+import java.time.ZoneOffset
 
 object models {
   import java.time.{Instant, OffsetDateTime, ZoneId, ZoneOffset}
@@ -25,9 +26,11 @@ object models {
     raw: Seq[String]
   )
 
+  val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+  
   private val now: Instant = Instant.now()
-  private val offsetDateTime = OffsetDateTime.ofInstant(now, ZoneId.systemDefault())
-  private val dateString = offsetDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"))
+  val offsetDateTime = OffsetDateTime.ofInstant(now, ZoneId.systemDefault())
+  private val dateString = offsetDateTime.format(dateTimeFormatter)
   private val zoneOffset: ZoneOffset = offsetDateTime.getOffset()
   
   val rawStr = Seq(
@@ -79,24 +82,51 @@ object SimpleMongoApp {
     import org.bson.Document
     import com.mongodb.spark.config._
     import io.circe.generic.auto._, io.circe.syntax._
-	
-    // val writeConfig = WriteConfig(Map("collection" -> "hl7", "writeConcern.w" -> "majority"), Some(WriteConfig(sc)))
-    val sparkDocuments = sc.parallelize((1 to 10).map { i => 
-      
-      Document.parse(hl7Msg.asJson.toString)      
-    })
+    import java.time.{Instant, LocalDateTime, ZoneId, ZonedDateTime}
+  
+    val docs = (1 to 10).flatMap { i =>
+      (1 to 10).map { j =>
+        val nextDt = offsetDateTime.minusDays(j).minusMonths(i)
+        val nextDtStr = nextDt.format(dateTimeFormatter)
+        
+        val nextMsg = hl7Msg.copy(dateCreated = nextDt.toInstant().toEpochMilli(), dateLocal = nextDtStr)
 
+        Document.parse(nextMsg.asJson.toString)  
+      }
+    }.toSeq
+
+    val sparkDocuments = sc.parallelize(docs)
+
+    // Uses WriteConfig
+    // val writeConfig = WriteConfig(Map("collection" -> "hl7", "writeConcern.w" -> "majority"), Some(WriteConfig(sc)))
     // MongoSpark.save(sparkDocuments, writeConfig)
-    // sparkDocuments.saveToMongoDB() // Uses SparkConf
+    
+    // Uses SparkConf
+    // sparkDocuments.saveToMongoDB() 
     
     // Read
+    import spark.implicits._
+
+    // Filter
+    val start = ZonedDateTime.of(2020, 5, 1, 0, 0, 0, 0, ZoneId.systemDefault())
+
+    val from = start.toInstant().toEpochMilli()
+    val to = start.plusMonths(1).toInstant().toEpochMilli()
+
     val rdd = MongoSpark.load(sc)
+    // rdd.take(10).foreach(a => println(a.toJson))
 
-    println(rdd.count)
-    
-    println(rdd.first.toJson)
+    val df = rdd.toDF().select('mrn, 'messageType, 'dateCreated, 'dateTimezoneOffset, 'dateLocal, 'raw)
 
-    rdd.take(1).foreach(println)
+    val df2 = df.filter(df.col("dateCreated") >= from)
+      .filter(df.col("dateCreated") < to)
+
+    // Should be exactly 10.  
+    println(df2.count())
+      
+    val ds = df2.as[Hl7Message]
+
+    ds.take(10).foreach(a => println(a.asJson))
 
     spark.stop()
   }
