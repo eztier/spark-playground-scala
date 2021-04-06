@@ -44,7 +44,7 @@ lazy val global = project
     libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
       "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
-      "com.lucidworks.spark" % "spark-solr" % "3.6.0",
+      "com.lucidworks.spark" % "spark-solr" % "3.7.0",
       "com.microsoft.sqlserver" % "mssql-jdbc" % "7.2.2.jre8",
       "com.datastax.spark" %% "spark-cassandra-connector" % "2.4.1"
     )
