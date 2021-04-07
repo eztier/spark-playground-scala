@@ -50,7 +50,7 @@ object SimpleCassandra2SolrApp {
     // metadata: Option[Map[String, String]] = None
   )
   
-  def main(args: Array[String]) {
+  def main2(args: Array[String]) {
     // import com.datastax.spark.connector.cql._
     
     val spark: SparkSession = SparkSession.builder.master("local").appName("Simple cassandra 2 solr application").getOrCreate()
@@ -87,7 +87,7 @@ object SimpleCassandra2SolrApp {
         .cassandraFormat("ca_document_extracted", "dwh")
         .options(cassandraOptions2)
         .load()
-        .filter($"domain" === System.getenv("DOC_DOMAIN"))
+        .filter($"domain" === System.getenv("DOC_DOMAIN") and $"doc_year_created" > 0)
         .limit(10)
 
       r.explain  
@@ -160,7 +160,7 @@ object SimpleCassandra2SolrApp {
       }
   }
 
-  def main2(args: Array[String]) = {
+  def main(args: Array[String]) = {
     
     import org.apache.spark.sql.functions._
     
@@ -177,7 +177,7 @@ object SimpleCassandra2SolrApp {
       .cassandraFormat("ca_document_extracted", "dwh")
       .options(cassandraOptions)
       .load()
-      .filter($"doc_year_created" > 0)
+      .filter($"domain" === System.getenv("DOC_DOMAIN") and $"doc_year_created" > 0)
       // .limit(10)
       .select(
         $"id",

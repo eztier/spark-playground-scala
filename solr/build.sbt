@@ -33,7 +33,9 @@ lazy val commonSettings = Seq(
 
 lazy val settings = commonSettings
 
-val sparkVersion = "2.4.4"
+val sparkVersion = "2.4.3"
+
+// /spark/jars/jackson-databind-2.6.7.1.jar
 
 lazy val global = project
   .in(file("."))
@@ -44,7 +46,10 @@ lazy val global = project
     libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
       "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
-      "com.lucidworks.spark" % "spark-solr" % "3.7.0",
+      // "org.apache.spark" %% "spark-core" % sparkVersion,
+      // "org.apache.spark" %% "spark-sql" % sparkVersion,
+      "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.7.1",
+      "com.lucidworks.spark" % "spark-solr" % "3.6.0",
       "com.microsoft.sqlserver" % "mssql-jdbc" % "7.2.2.jre8",
       "com.datastax.spark" %% "spark-cassandra-connector" % "2.4.1"
     )
@@ -65,7 +70,13 @@ lazy val global = project
 // https://translate.google.com/translate?hl=en&sl=zh-CN&u=https://blog.csdn.net/xiewenbo/article/details/53573440&prev=search
 lazy val assemblySettings = Seq(
   assemblyJarName in assembly := s"${name.value}-${version.value}.jar",
-  
+
+  /*
+  assemblyShadeRules in assembly := Seq(
+    ShadeRule.rename("com.fasterxml.jackson.**" -> "shadefasterxmljackson.@1").inLibrary("com.fasterxml.jackson.core" % "jackson-databind" % SimpleCassandraClientVersion).inProject
+  ),
+  */
+
   assemblyMergeStrategy in assembly := {
     case x =>
       val oldStrategy = (assemblyMergeStrategy in assembly).value
