@@ -18,7 +18,7 @@ object SimpleCassandraApp {
     https://github.com/datastax/spark-cassandra-connector/blob/master/spark-cassandra-connector/src/main/scala/com/datastax/spark/connector/rdd/ReadConf.scala
     --conf spark.cassandra.input.consistency.level=ALL
   */
-  def main(args: Array[String]) {
+  def mainX(args: Array[String]) {
     val spark = SparkSession.builder.appName("Simple Cassandra").getOrCreate()
     val sc: SparkContext = spark.sparkContext
     
