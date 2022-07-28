@@ -48,9 +48,9 @@ lazy val global = project
       "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
       // "org.apache.spark" %% "spark-core" % sparkVersion,
       // "org.apache.spark" %% "spark-sql" % sparkVersion,
-      "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.7.1",
+      // "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.7.1",
       "com.lucidworks.spark" % "spark-solr" % "3.6.0",
-      "com.microsoft.sqlserver" % "mssql-jdbc" % "7.2.2.jre8",
+      // "com.microsoft.sqlserver" % "mssql-jdbc" % "7.2.2.jre8",
       "com.datastax.spark" %% "spark-cassandra-connector" % "2.4.1"
     )
   )

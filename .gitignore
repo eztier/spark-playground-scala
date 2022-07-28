@@ -6,3 +6,4 @@
 **/lib
 **/.metals
 **/.bloop
+**/metals.sbt

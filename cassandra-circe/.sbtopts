@@ -1,0 +1,5 @@
+-J-Xss64m
+-J-Xms2048m
+-J-Xmx4g
+-J-XX:+CMSClassUnloadingEnabled
+-J-XX:ReservedCodeCacheSize=512m
