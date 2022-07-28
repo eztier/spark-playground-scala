@@ -24,6 +24,7 @@ val SparkCassandraConnectorVersion = "2.4.2"
 libraryDependencies += "com.datastax.spark" %% "spark-cassandra-connector" % SparkCassandraConnectorVersion
 libraryDependencies += "io.circe" %% "circe-core" % CirceVersion
 libraryDependencies += "io.circe" %% "circe-generic" % CirceVersion
+libraryDependencies += "io.circe" %% "circe-parser" % CirceVersion
 libraryDependencies += "io.circe" %% "circe-generic-extras" % CirceGenericExVersion
 
 lazy val assemblySettings = Seq(
