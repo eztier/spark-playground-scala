@@ -15,7 +15,7 @@ object SimpleCassandraToCassandraApp {
     "spark.cassandra.input.consistency.level" -> "LOCAL_ONE"
   )
 
-  def main(args: Array[String]) = {
+  def main3(args: Array[String]) = {
   
     val spark = SparkSession.builder.appName("Simple cassandra 2 cassandra application").getOrCreate()
 
