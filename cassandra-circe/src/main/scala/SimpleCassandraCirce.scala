@@ -10,12 +10,12 @@ import com.eztier.clickmock.entity.grantsmock.domain.types._
 object SimpleCassandraCirceApp {
 
   case class DocumentData(
-    rootId: String = "",
-    rootType: String = ""
+    root_id: String = "",
+    root_type: String = ""
   )
 
   case class SnapshotData(
-    rootId: String = "",
+    id: String = "",
     current: String = ""
   )
 
@@ -26,6 +26,8 @@ object SimpleCassandraCirceApp {
 
   val cassandraOptions = Map(
     "cluster" -> System.getenv("CASSANDRA_CLUSTER"), // "Datacenter1"
+    // "table" -> System.getenv("CASSANDRA_FROM"),
+    // "keyspace" -> System.getenv("CASSANDRA_KEYSPACE"),
     "spark.cassandra.connection.host" -> System.getenv("CASSANDRA_HOST"), // "localhost"
     "spark.cassandra.connection.port" -> System.getenv("CASSANDRA_PORT"), // 9042
     "spark.cassandra.input.split.size_in_mb" -> "64",
@@ -41,6 +43,7 @@ object SimpleCassandraCirceApp {
     
     val ds = spark
       .read
+      // .format("org.apache.spark.sql.cassandra")
       .cassandraFormat(System.getenv("CASSANDRA_FROM"), System.getenv("CASSANDRA_KEYSPACE"))
       .options(cassandraOptions)
       .load()
@@ -48,13 +51,14 @@ object SimpleCassandraCirceApp {
       .limit(10)
       .select(
         'root_id,'root_type
-      )
-      .as[DocumentData]
+      ).as[DocumentData]
 
     val ds2 = ds.map { row =>
     
-      val rootId = row.rootId
-      val rootType = row.rootType
+      println(row)
+
+      val rootId = row.root_id
+      val rootType = row.root_type
       val snapshotPurpose = rootType match {
         case "_FundingProposal" => "psoft-proposal-snapshot"
         case "_FundingAward" => "psoft-award-snapshot"
@@ -70,6 +74,9 @@ object SimpleCassandraCirceApp {
         .select('id, 'current)
         .as[SnapshotData]
         
+      snapshotDs.explain
+      snapshotDs.show
+
       val defaultMergedData = MergedData( rootId = rootId)
 
       val mergedData: MergedData = if (snapshotDs.isEmpty) defaultMergedData
@@ -100,12 +107,14 @@ object SimpleCassandraCirceApp {
     
     ds2.printSchema
 
-    // df2.explain
-    // df2.show  
+    ds2.explain
+    ds2.show  
 
+    /*
     ds2.write
       .option("header", "true")
       .csv("/tmp/out.csv")
+    */
 
     /*  
     df2
@@ -125,7 +134,7 @@ object SimpleCassandraCirceApp {
 
 /*
 CASSANDRA_CLUSTER="Test Cluster" \
-CASSANDRA_HOST="127.0.0.1" \
+CASSANDRA_HOST="192.168.1.23" \
 CASSANDRA_PORT=9042 \
 CASSANDRA_KEYSPACE=dwh \
 CASSANDRA_FROM=ca_document_extracted \

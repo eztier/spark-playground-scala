@@ -4,7 +4,7 @@ version := "1.0"
 
 scalaVersion := "2.12.12"
 
-val sparkVersion = "2.4.4"
+val sparkVersion = "3.1.3"
 
 resolvers += "Spark Packages Repo" at "https://dl.bintray.com/spark-packages/maven"
 resolvers += Resolver.bintrayIvyRepo("com.eed3si9n", "sbt-plugins")
@@ -19,7 +19,7 @@ libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provi
 
 val CirceVersion = "0.12.1"
 val CirceGenericExVersion = "0.12.2"
-val SparkCassandraConnectorVersion = "2.4.2"
+val SparkCassandraConnectorVersion = "3.1.0"
 
 libraryDependencies += "com.datastax.spark" %% "spark-cassandra-connector" % SparkCassandraConnectorVersion
 libraryDependencies += "io.circe" %% "circe-core" % CirceVersion
